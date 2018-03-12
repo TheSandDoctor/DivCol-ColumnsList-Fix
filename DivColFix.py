@@ -2,13 +2,6 @@
 import mwclient, configparser, mwparserfromhell, argparse
 from time import sleep
 
-def getopts(argv):
-    opts = {}  # Empty dictionary to store key-value pairs.
-    while argv:  # While there are arguments left to parse...
-        if argv[0][0] == '-':  # Found a "-name value" pair.
-            opts[argv[0]] = argv[1]  # Add key and value to the dictionary.
-        argv = argv[1:]  # Reduce the argument list by copying it starting from index 1.
-    return opts
 def call_home(site):#config):
     #page = site.Pages['User:' + config.get('enwiki','username') + "/status"]
     page = site.Pages['User:TweetCiteBot/status']
@@ -40,11 +33,8 @@ def save_edit(page, utils, text):
     time = 0
     while True:
          #text = page.edit()
-         #text = text.replace('[[Category:Apples]]', '[[Category:Pears]]')
         if time == 1:
-        #     page = site.Pages[page.page_title]
             text = site.Pages[page.page_title].text()
-        #text = remove_param(original_text,dry_run)
         content_changed, text = remove_param(original_text,dry_run)
         try:
             if dry_run:
@@ -76,7 +66,6 @@ def save_edit(page, utils, text):
         break
 
 def remove_param(text,dry_run):
-#    print("In remove {}".format(dry_run))
     wikicode = mwparserfromhell.parse(text)
     templates = wikicode.filter_templates()
     content_changed = False
@@ -87,12 +76,6 @@ def remove_param(text,dry_run):
         text_file.close()
     #TODO: End dry run only
     code = mwparserfromhell.parse(text)
-#    print(code.get_sections())
-    #text_file = open("sec.txt",'w')
-    #text_file.write(str(code.get_sections()))
-    #text_file.close()
-    #for li in code.get_sections():
-    #    print(li)
     for template in code.filter_templates():#Tracklist, Track, Soundtrack, Tlist, Track list
         template.name = template.name.lower()
         #print(template.name)
@@ -100,7 +83,6 @@ def remove_param(text,dry_run):
             #pass
             if template.has("cols"):
                 #cols = template.get("cols").value
-
                 template.remove("cols")
                 #template.add("colwidth", str(cols) + "em")
                 content_changed = True
@@ -109,55 +91,33 @@ def remove_param(text,dry_run):
             #    col = template.get("1").value
                 template.remove(template.get("1"),False)
             #    template.add("colwidth", str(col) + "em")
-                #template.replace(str(template.get("1")),"colwidth",str(template.get("1").value) + "em")
                 content_changed = True
             if template.has("2"):
                 print("Has hidden param 2")
                 col = template.get("2").value
                 template.remove("2",False)
-                template.add("colwidth",str(col))
+                template.add("colwidth",str(col) + "em")
             else:
                 pass
-            #    print(template.params[0].value)
-            #    params_0 = template.params[0].value
-            #    print("Val: " + str(params_0))
-                #TODO: Doesn't work
-                #template.remove(str(template.params[0].value))
-                #template.remove(params_0)
-            #    print("Val2d: " + str(params_0))
-            #    template.add("colwidth", str(params_0) + "em")
-            #    content_changed = True
-            #print(template.params[0])
 
-            #if template.has("writing_credits"):
-            #    template.remove("writing_credits",False)
-            #    print("Removed writing_credits")
-            #if template.has("lyrics_credits"):
-            #    template.remove("lyrics_credits",False)
-            #    print("Removed lyrics_credits")
-            #if template.has("music_credits"):
-            #    template.remove("music_credits",False)
-            #    print("Removed music_credits")
     return [content_changed, str(code)] # get back text to save
 def main():
-
     #dry_run = False
-    parser = argparse.ArgumentParser(prog='TweetCiteBot Tweet URL conversion', description='''Reads {{cite web}} templates
-    on articles looking for url parameters containing Tweet URLs. If found, convert template to {{cite tweet}} and retrieve
-    relevant information (if possible). If the Tweet is a dead link, attempt recovery with the Wayback archive and tag accordingly
-    on-wiki. This task was approved by the English Wikipedia Bot Approvals Group at 17:59, 2 December 2017 (UTC) by BAG admin
-    User:cyberpower678''')
+    parser = argparse.ArgumentParser(prog='TweetCiteBot Div col deprecation fixer', description='''Reads {{div col}} templates
+    located inside the category "Pages using div col with deprecated parameters" (https://en.wikipedia.org/wiki/Category:Pages_using_div_col_with_deprecated_parameters).
+    If it has unnamed 1st and/or 2nd parameter(s) or uses the parameter |cols (all deprecated). If the 1st unnamed parameter is found, it removes the parameter.
+    If the 2nd unnamed parameter is found, then it removes the template and adds colwidth with the value of the 2nd unnamed parameter (plus "em").''')
     parser.add_argument("-dr", "--dryrun", help="perform a dry run (don't actually edit)",
                     action="store_true")
-    parser.add_argument("-arch","--archive", help="actively archive Tweet links (even if still live links)",
-                    action="store_true")
+    #parser.add_argument("-arch","--archive", help="actively archive Tweet links (even if still live links)",
+    #                action="store_true")
     args = parser.parse_args()
     if args.dryrun:
         dry_run = True
         print("Dry run")
-    if args.archive:
-        print("Archive allow")
-        archive_urls = True
+#    if args.archive:
+#        print("Archive allow")
+#        archive_urls = True
 
     site = mwclient.Site(('https','en.wikipedia.org'), '/w/')
     config = configparser.RawConfigParser()
