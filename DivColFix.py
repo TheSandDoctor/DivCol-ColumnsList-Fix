@@ -80,27 +80,88 @@ def remove_param(text,dry_run):
         template.name = template.name.lower()
         #print(template.name)
         if (template.name.matches("div col")):
-            #pass
-            if template.has("cols"):
-                #cols = template.get("cols").value
-                template.remove("cols")
-                #template.add("colwidth", str(cols) + "em")
-                content_changed = True
-            elif template.has("1"):
-                print("This exists! :D")
-            #    col = template.get("1").value
-                template.remove(template.get("1"),False)
-            #    template.add("colwidth", str(col) + "em")
-                content_changed = True
-            if template.has("2"):
-                print("Has hidden param 2")
-                col = template.get("2").value
-                template.remove("2",False)
-                template.add("colwidth",str(col) + "em")
-            else:
-                pass
-
+            content_changed = do_cleanup(template)
+        elif (template.name.matches("colbegin") or template.name.matches("cols")
+        or template.name.matches("div 2col") or template.name.matches("div col begin")
+        or template.name.matches("div col start") or template.name.matches("div-col")
+        or template.name.matches("divbegin") or template.name.matches("divcol")
+        or template.name.matches("divided column") or template.name.matches("palmares start")):
+            #check for alias, if found, replace alias with proper template name and run cleanup
+            print("Alternate template version (redirect to {{div col}})")
+            template.name = "div col"
+            content_changed = do_cleanup(template)
+            print("done")
+            pass
+            #template.name.matches("col div end") doesn't need to be included,
+            #as no need to change if present
+        if (template.name.matches("colend")
+        or template.name.matches("div col end") or template.name.matches("div end")
+        or template.name.matches("div-col-end") or template.name.matches("divcol-end")
+        or template.name.matches("divcolend") or template.name.matches("divend")
+        or template.name.matches("end div col") or template.name.matches("enddivcol")
+        or template.name.matches("palmares end")):
+            #check for alias, if found, replace alias with proper template name
+            print("Matched colend")
+            template.name = "div col end"
     return [content_changed, str(code)] # get back text to save
+def get_em_sizes(template, param):
+    #param = str(param)
+    #print("Value enter: " + str(template.get(param).value))
+    em = None
+    if int(str(template.get(param).value)) <= 2:
+    #    print("value 2 or less, em 30")
+        return 30#em = 0
+    elif int(str(template.get(param).value)) == 3:
+    #    print("value 3, em 22")
+        return 22#em = 22
+    elif int(str(template.get(param).value)) == 4:
+#        print("value 4, em 18")
+        return 18#em = 18
+    elif int(str(template.get(param).value)) == 5:
+#        print("value 5, em 15")
+        return 15#em = 15
+    elif int(str(template.get(param).value)) == 6:
+    #    print("value 6, em 13")
+        return 13#em = 13
+    elif int(str(template.get(param).value)) > 6:
+    #    print("value greater 6, em 10")
+        return 10#em = 10
+    return em
+
+def do_cleanup(template):
+    if template.has("cols"):
+        #cols = template.get("cols").value
+        #size = template.get("cols").value
+        size = get_em_sizes(template, "cols")
+        template.remove("cols")
+        template.add("colwidth",str(size) + "em")
+    #    print("Cols")
+        #template.add("colwidth", str(cols) + "em")
+        return True
+    if template.has("1") and template.has("2"):
+        #TODO: remove 1, use 2
+        template.remove("1",False)
+        size = get_em_sizes(template, "2")
+        template.remove("2",False)
+        template.add("colwidth",str(size) + "em")
+    #    print("1 and 2 " + str(size))
+        return True
+    #    pass
+    elif template.has("1"):
+        #TODO: use 1, remove
+        size = get_em_sizes(template, "1")
+        template.remove("1")
+        template.add("colwidth",str(size) + "em")
+    #    print("1")
+        return True
+    #    pass
+    elif template.has("2"):
+        #TODO: use 2
+        size = get_em_sizes(template, "2")
+        template.remove("2")
+        template.add("colwidth",str(size) + "em")
+    #    print("2")
+        return True
 def main():
     #dry_run = False
     parser = argparse.ArgumentParser(prog='TweetCiteBot Div col deprecation fixer', description='''Reads {{div col}} templates
