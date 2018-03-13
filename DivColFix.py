@@ -2,7 +2,7 @@
 import mwclient, configparser, mwparserfromhell, argparse,re, pathlib
 from time import sleep
 
-def call_home(site):#config):
+def call_home(site):
     #page = site.Pages['User:' + config.get('enwiki','username') + "/status"]
     page = site.Pages['User:TweetCiteBot/status']
     text = page.text()
@@ -15,10 +15,10 @@ def save_edit(page, utils, text):
     site = utils[1]
     dry_run = utils[2]
     original_text = text
-
-    #if not allow_bots(original_text, config.get('enwiki','username')):
-    #    print("Page editing blocked as template preventing edit is present.")
-    #    return
+    if not dry_run:
+        if not allow_bots(original_text, config.get('enwiki','username')):
+            print("Page editing blocked as template preventing edit is present.")
+            return
     #print("{}".format(dry_run))
     code = mwparserfromhell.parse(text)
     for template in code.filter_templates():
@@ -36,7 +36,7 @@ def save_edit(page, utils, text):
         if time == 1:
             text = site.Pages[page.page_title].text()
         try:
-            content_changed, text = remove_param(original_text,dry_run)
+            content_changed, text = process_page(original_text,dry_run)
         except ValueError as e:
             """
             To get here, there must have been an issue figuring out the
@@ -49,6 +49,7 @@ def save_edit(page, utils, text):
             and return out of this method.
             """
             print(e)
+            pathlib.Path('./errors').mkdir(parents=False, exist_ok=True)
             title = get_valid_filename(page.page_title)
             text_file = open("./errors/err " + title + ".txt", "w")
             text_file.write("Error present: " +  str(e) + "\n\n\n\n\n" + text)
@@ -102,16 +103,15 @@ def get_valid_filename(s):
     assert(s is not "" or s is not None)
     s = str(s).strip().replace(' ', '_')
     return re.sub(r'(?u)[^-\w.]', '', s)
-def remove_param(text,dry_run):
+def process_page(text,dry_run):
     wikicode = mwparserfromhell.parse(text)
     templates = wikicode.filter_templates()
     content_changed = False
 
 
     code = mwparserfromhell.parse(text)
-    for template in code.filter_templates():#Tracklist, Track, Soundtrack, Tlist, Track list
+    for template in code.filter_templates():
         template.name = template.name.lower()
-        #print(template.name)
         if (template.name.matches("div col")):
             try:
                 content_changed = do_cleanup(template)
@@ -146,7 +146,6 @@ def remove_param(text,dry_run):
 def get_em_sizes(template, param):
     #param = str(param)
     #print("Value enter: " + str(template.get(param).value))
-#    em = None
     is_not_digit = re.match(r'([0-9]+)em?',str(template.get(param).value))
     if is_not_digit:
         #template.get(param).value = is_not_digit.group(1)
@@ -157,36 +156,31 @@ def get_em_sizes(template, param):
     try:
         if int(str(template.get(param).value)) <= 2:
         #    print("value 2 or less, em 30")
-            return 30#em = 0
+            return 30
         elif int(str(template.get(param).value)) == 3:
         #    print("value 3, em 22")
-            return 22#em = 22
+            return 22
         elif int(str(template.get(param).value)) == 4:
     #        print("value 4, em 18")
-            return 18#em = 18
+            return 18
         elif int(str(template.get(param).value)) == 5:
     #        print("value 5, em 15")
-            return 15#em = 15
+            return 15
         elif int(str(template.get(param).value)) == 6:
         #    print("value 6, em 13")
-            return 13#em = 13
+            return 13
         elif int(str(template.get(param).value)) > 6:
         #    print("value greater 6, em 10")
-            return 10#em = 10
+            return 10
     except ValueError:
         raise
-    #return em
 
 def do_cleanup(template):
     try:
         if template.has("cols"):
-            #cols = template.get("cols").value
-            #size = template.get("cols").value
             size = get_em_sizes(template, "cols")
             template.remove("cols")
             template.add("colwidth",str(size) + "em")
-        #    print("Cols")
-            #template.add("colwidth", str(cols) + "em")
             return True
         if template.has("1") and template.has("2"):
             #TODO: remove 1, use 2
@@ -194,23 +188,17 @@ def do_cleanup(template):
             size = get_em_sizes(template, "2")
             template.remove("2",False)
             template.add("colwidth",str(size) + "em")
-        #    print("1 and 2 " + str(size))
             return True
-        #    pass
         elif template.has("1"):
             #TODO: use 1, remove
             size = get_em_sizes(template, "1")
             template.remove("1")
             template.add("colwidth",str(size) + "em")
-        #    print("1")
             return True
-        #    pass
         elif template.has("2"):
-            #TODO: use 2
             size = get_em_sizes(template, "2")
             template.remove("2")
             template.add("colwidth",str(size) + "em")
-        #    print("2")
             return True
     except ValueError:
         raise
@@ -250,23 +238,19 @@ def category_run(cat_name, utils, site, offset,limited_run,pages_to_run):
             offset -= 1
             print("Skipped due to offset config")
             continue
-    #page = site.Pages['User:TweetCiteBot/sandbox']#"If You Ever Think I Will Stop Goin' In Ask Double R"]#'3 (Bo Bice album)']
         print("Working with: " + page.name)
-    #page = site.Pages['User:TweetCiteBot/sandbox']#'3 (Bo Bice album)']
         if limited_run:
             if counter < pages_to_run:
                 counter += 1
                 text = page.text()
-
                 try:
-                    #utils = [config,site,dry_run]
                     save_edit(page, utils, text)#config, api, site, text, dry_run)#, config)
                 except ValueError as err:
                     print(err)
             else:
                 return  # run out of pages in limited run
 def main():
-    #dry_run = False
+    dry_run = False
     pages_to_run = 1
     offset = 0
     category = "Pages using div col with deprecated parameters"
@@ -284,26 +268,21 @@ def main():
     if args.dryrun:
         dry_run = True
         print("Dry run")
-#    if args.archive:
-#        print("Archive allow")
-#        archive_urls = True
 
     site = mwclient.Site(('https','en.wikipedia.org'), '/w/')
     if dry_run:
         pathlib.Path('./tests').mkdir(parents=False, exist_ok=True)
-    pathlib.Path('./errors').mkdir(parents=False, exist_ok=True)
     config = configparser.RawConfigParser()
 
     utils = [config,site,dry_run]
     try:
-    #    single_run(title, utils, site)
+        single_run('User:TweetCiteBot/sandbox', utils, site)
     #User:TweetCiteBot/sandbox
-        category_run("Pages using div col with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
+        #category_run("Pages using div col with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
     except ValueError as e:
         print("\n\n" + str(e))
     #config.read('credentials.txt')
     #TODO: site.login(config.get('enwiki','username'), config.get('enwiki', 'password'))
-    #page = site.Pages['10th U-boat Flotilla','11th Air Division']#'3 (Bo Bice album)']
 
 if __name__ == "__main__":
     main()
