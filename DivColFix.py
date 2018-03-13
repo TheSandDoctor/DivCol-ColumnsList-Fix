@@ -103,6 +103,7 @@ def get_valid_filename(s):
     assert(s is not "" or s is not None)
     s = str(s).strip().replace(' ', '_')
     return re.sub(r'(?u)[^-\w.]', '', s)
+
 def process_page(text,dry_run):
     wikicode = mwparserfromhell.parse(text)
     templates = wikicode.filter_templates()
@@ -112,9 +113,24 @@ def process_page(text,dry_run):
     code = mwparserfromhell.parse(text)
     for template in code.filter_templates():
         template.name = template.name.lower()
+        if (template.name.matches("columns-list") or template.name.matches("cmn")
+        or template.name.matches("col list") or template.name.matches("col-list")
+        or template.name.matches("collist") or template.name.matches("column list")
+        or template.name.matches("columns list") or template.name.matches("columnslist")
+        or template.name.matches("list-columns") or template.name.matches("listcolumns")):
+            try:
+                content_changed = do_cleanup_columns_list(template)
+                print("done columns-list")
+            except ValueError:
+                raise
+
+
+
+
+
         if (template.name.matches("div col")):
             try:
-                content_changed = do_cleanup(template)
+                content_changed = do_cleanup_div_col(template)
             except ValueError:
                 raise
 
@@ -127,8 +143,8 @@ def process_page(text,dry_run):
             print("Alternate template version (redirect to {{div col}})")
             template.name = "div col"
             try:
-                content_changed = do_cleanup(template)
-                print("done")
+                content_changed = do_cleanup_div_col(template)
+                print("done div col")
             except ValueError:
                 raise
             #template.name.matches("col div end") doesn't need to be included,
@@ -175,7 +191,7 @@ def get_em_sizes(template, param):
     except ValueError:
         raise
 
-def do_cleanup(template):
+def do_cleanup_div_col(template):
     try:
         if template.has("cols"):
             size = get_em_sizes(template, "cols")
@@ -202,6 +218,23 @@ def do_cleanup(template):
             return True
     except ValueError:
         raise
+
+def do_cleanup_columns_list(template):
+    try:
+        if template.has("1"):
+            size = get_em_sizes(template, "1")
+            """
+            Replace first param, since template.add won't work here as it would be added at end,
+            which would not work or meet conventions. Due to this, best to just replace the first
+            parameter as we have verified above that it is an unnamed parameter.
+            """
+            template.params[0] = "colwidth=" + str(size) + "em"
+            #template.replace("1","colwidth",str(size) + "em")
+            #template.add("colwidth",str(size) + "em")
+            return True
+    except ValueError:
+        raise
+
 def single_run(title, utils, site):
     if title is None or title is "":
         raise ValueError("Category name cannot be empty!")
@@ -251,7 +284,7 @@ def category_run(cat_name, utils, site, offset,limited_run,pages_to_run):
                 return  # run out of pages in limited run
 def main():
     dry_run = False
-    pages_to_run = 1
+    pages_to_run = 10
     offset = 0
     category = "Pages using div col with deprecated parameters"
     limited_run = True
@@ -276,9 +309,10 @@ def main():
 
     utils = [config,site,dry_run]
     try:
-        single_run('User:TweetCiteBot/sandbox', utils, site)
+        #single_run('User:TweetCiteBot/sandbox', utils, site)
     #User:TweetCiteBot/sandbox
         #category_run("Pages using div col with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
+        category_run("Pages using Columns-list with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
     except ValueError as e:
         print("\n\n" + str(e))
     #config.read('credentials.txt')
