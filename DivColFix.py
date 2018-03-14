@@ -170,7 +170,9 @@ def get_em_sizes(template, param):
         print("Wasn't digit")
         return is_not_digit.group(1)
     try:
-        if int(str(template.get(param).value)) <= 2:
+        if int(str(template.get(param).value)) < 2:
+            return False
+        elif int(str(template.get(param).value)) == 2:
         #    print("value 2 or less, em 30")
             return 30
         elif int(str(template.get(param).value)) == 3:
@@ -196,26 +198,29 @@ def do_cleanup_div_col(template):
         if template.has("cols"):
             size = get_em_sizes(template, "cols")
             template.remove("cols")
-            template.add("colwidth",str(size) + "em")
+            if size:
+                template.add("colwidth",str(size) + "em")
             return True
         if template.has("1") and template.has("2"):
             #TODO: remove 1, use 2
             template.remove("1",False)
             size = get_em_sizes(template, "2")
             template.remove("2",False)
-            template.add("colwidth",str(size) + "em")
+            if size:
+                template.add("colwidth",str(size) + "em")
             return True
         elif template.has("1"):
             #TODO: use 1, remove
             size = get_em_sizes(template, "1")
             template.remove("1")
-            if size > 1:
+            if size:
                 template.add("colwidth",str(size) + "em")
             return True
         elif template.has("2"):
             size = get_em_sizes(template, "2")
             template.remove("2")
-            template.add("colwidth",str(size) + "em")
+            if size:
+                template.add("colwidth",str(size) + "em")
             return True
     except ValueError:
         raise
@@ -229,7 +234,8 @@ def do_cleanup_columns_list(template):
             which would not work or meet conventions. Due to this, best to just replace the first
             parameter as we have verified above that it is an unnamed parameter.
             """
-            template.params[0] = "colwidth=" + str(size) + "em"
+            if size:
+                template.params[0] = "colwidth=" + str(size) + "em"
             #template.replace("1","colwidth",str(size) + "em")
             #template.add("colwidth",str(size) + "em")
             return True
@@ -310,10 +316,10 @@ def main():
 
     utils = [config,site,dry_run]
     try:
-        #single_run('User:TweetCiteBot/sandbox', utils, site)
+        single_run('User:TweetCiteBot/sandbox', utils, site)
     #User:TweetCiteBot/sandbox
         #category_run("Pages using div col with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
-        category_run("Pages using Columns-list with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
+    #    category_run("Pages using Columns-list with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
     except ValueError as e:
         print("\n\n" + str(e))
     #config.read('credentials.txt')
