@@ -171,6 +171,7 @@ def get_em_sizes(template, param):
         return is_not_digit.group(1)
     try:
         if int(str(template.get(param).value)) < 2:
+            print("FALSEEEEEEEE!")
             return False
         elif int(str(template.get(param).value)) == 2:
         #    print("value 2 or less, em 30")
@@ -236,6 +237,8 @@ def do_cleanup_columns_list(template):
             """
             if size:
                 template.params[0] = "colwidth=" + str(size) + "em"
+            else:
+                template.remove("1",False)  # remove since it is 1 (or less) and therefore redundant
             #template.replace("1","colwidth",str(size) + "em")
             #template.add("colwidth",str(size) + "em")
             return True
