@@ -209,7 +209,8 @@ def do_cleanup_div_col(template):
             #TODO: use 1, remove
             size = get_em_sizes(template, "1")
             template.remove("1")
-            template.add("colwidth",str(size) + "em")
+            if size > 1:
+                template.add("colwidth",str(size) + "em")
             return True
         elif template.has("2"):
             size = get_em_sizes(template, "2")
