@@ -4,10 +4,31 @@ from time import sleep
 
 def call_home(site):
     #page = site.Pages['User:' + config.get('enwiki','username') + "/status"]
-    page = site.Pages['User:TweetCiteBot/status']
+    page = site.Pages['User:DeprecatedFixerBot/status']
     text = page.text()
     if "false" in text.lower():
         return False
+    return True
+def allow_bots(text, user):
+    user = user.lower().strip()
+    text = mwparserfromhell.parse(text)
+    for tl in text.filter_templates():
+        if tl.name in ('bots', 'nobots'):
+            break
+    else:
+        return True
+    for param in tl.params:
+        bots = [x.lower().strip() for x in param.value.split(",")]
+        if param.name == 'allow':
+            if ''.join(bots) == 'none': return False
+            for bot in bots:
+                if bot in (user, 'all'):
+                    return True
+        elif param.name == 'deny':
+            if ''.join(bots) == 'none': return True
+            for bot in bots:
+                if bot in (user, 'all'):
+                    return False
     return True
 def save_edit(page, utils, text):
     config = utils[0]
@@ -16,7 +37,7 @@ def save_edit(page, utils, text):
     dry_run = utils[2]
     original_text = text
     if not dry_run:
-        if not allow_bots(original_text, config.get('enwiki','username')):
+        if not allow_bots(original_text, config.get('enwikidep','username')):
             print("Page editing blocked as template preventing edit is present.")
             return
     #print("{}".format(dry_run))
@@ -24,13 +45,14 @@ def save_edit(page, utils, text):
     for template in code.filter_templates():
         if template.name.matches("nobots") or template.name.matches("Wikipedia:Exclusion compliant"):
             if template.has("allow"):
-                if "TweetCiteBot" in template.get("allow").value:
+                if "DeprecatedFixerBot" in template.get("allow").value:
                     break # can edit
             print("\n\nPage editing blocked as template preventing edit is present.\n\n")
             return
     if not call_home(site):#config):
         raise ValueError("Kill switch on-wiki is false. Terminating program.")
     time = 0
+    edit_summary = """'Removed deprecated parameter(s) from [[Template:Div col]]/[[Template:Columns-list]] using [[User:""" + config.get('enwikidep','username') + "| " + config.get('enwikidep','username') + """]]. Questions? See [[Template:Div col#Usage of "cols" parameter]] or [[User talk:TheSandDoctor|msg TSD!]] (please mention that this is task #2! [[Wikipedia:Bots/Requests for approval/DeprecatedFixerBot 2|BRFA in-progress]])"""
     while True:
          #text = page.edit()
         if time == 1:
@@ -79,10 +101,11 @@ def save_edit(page, utils, text):
                     print("Content not changed, don't print output")
                 break
             else:
-                print("Would have saved here")
-                break
+            #    print("Would have saved here")
+            #    break
                 #TODO: Enable
-                #page.save(text, summary='Removed deprecated parameter(s) from [[Template:Track listing]]', bot=True, minor=True)
+                page.save(text, summary=edit_summary, bot=True, minor=True)
+                print("Saved page")
         except [[EditError]]:
             print("Error")
             time = 1
@@ -112,7 +135,7 @@ def process_page(text,dry_run):
 
     code = mwparserfromhell.parse(text)
     for template in code.filter_templates():
-        template.name = template.name.lower()
+    #    template.name = template.name.lower()
         if (template.name.matches("columns-list") or template.name.matches("cmn")
         or template.name.matches("col list") or template.name.matches("col-list")
         or template.name.matches("collist") or template.name.matches("column list")
@@ -252,7 +275,7 @@ def single_run(title, utils, site):
         raise ValueError("Utils cannot be empty!")
     if site is None:
         raise ValueError("Site cannot be empty!")
-
+    print(title)
     page = site.Pages[title]#'3 (Bo Bice album)']
     text = page.text()
 
@@ -281,7 +304,7 @@ def category_run(cat_name, utils, site, offset,limited_run,pages_to_run):
             offset -= 1
             print("Skipped due to offset config")
             continue
-        print("Working with: " + page.name)
+        print("Working with: " + page.name + " " + str(counter))
         if limited_run:
             if counter < pages_to_run:
                 counter += 1
@@ -296,7 +319,7 @@ def main():
     dry_run = False
     pages_to_run = 10
     offset = 0
-    category = "Pages using div col with deprecated parameters"
+    category = "Pages using Columns-list with deprecated parameters"#"Pages using div col with deprecated parameters"
     limited_run = True
 
     parser = argparse.ArgumentParser(prog='TweetCiteBot Div col deprecation fixer', description='''Reads {{div col}} templates
@@ -316,11 +339,19 @@ def main():
     if dry_run:
         pathlib.Path('./tests').mkdir(parents=False, exist_ok=True)
     config = configparser.RawConfigParser()
+    config.read('credentials.txt')
+    try:
+        site.login(config.get('enwikidep','username'), config.get('enwikidep', 'password'))
+    except errors.LoginError as e:
+        #print(e[1]['reason'])
+        print(e)
+        raise ValueError("Login failed.")
 
     utils = [config,site,dry_run]
     try:
-        single_run('User:TweetCiteBot/sandbox', utils, site)
+        #single_run('User:DeprecatedFixerBot/sandbox', utils, site)
     #User:TweetCiteBot/sandbox
+        category_run(category, utils, site, offset,limited_run,pages_to_run)
         #category_run("Pages using div col with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
     #    category_run("Pages using Columns-list with deprecated parameters", utils, site, offset,limited_run,pages_to_run)
     except ValueError as e:
