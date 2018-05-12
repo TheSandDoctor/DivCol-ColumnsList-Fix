@@ -23,15 +23,25 @@ py::list gen_cat(py::object site,py::str cat) {
     }
     return list;
 }
+bool is_dry_run(py::str run)
+{
+    if(py::str(run).attr("strip")().is(py::str(Py_True)))
+        return true;
+    else// if(py::str(run) == Py_False)
+        return false;
+    //return NULL;
+}
 void save_edit(py::handle page, py::list utils, py::str text)
 {
     auto config = utils[0];
     auto site = utils[1];
     //bool bDry_run = (bool)utils[2];
-    string Dry_run = string(py::str(utils[2]));
-    bool bDry_run;
+   // string Dry_run = string(py::str(utils[2]));
+    bool bDry_run = is_dry_run(py::str(utils[2]));
+   // py::print(string("V ") + string(py::str(utils[2])));
     bool bContent_changed = false;
-    from_string<bool>(bDry_run, Dry_run, std::boolalpha);
+    //from_string<bool>(bDry_run, Dry_run, std::boolalpha);
+   // py::print(bDry_run);
     py::str original_text = text;
     py::object divcol = pybind11::module::import("DivColFix");
     if(!bDry_run && !divcol.attr("allow_bots")(original_text,config.attr("get")("enwikidep","username")))
@@ -67,7 +77,15 @@ void save_edit(py::handle page, py::list utils, py::str text)
         }
         try
         {
-            bContent_changed, text = divcol.attr("process_page")(original_text,bDry_run);
+            py::list temp;
+            temp = divcol.attr("process_page")(original_text,bDry_run);
+            auto changed = temp[0];
+            if(py::str(changed).is(py::str(Py_True)))
+                bContent_changed = true;
+            else if(py::str(changed).is(py::str(Py_False)))
+                bContent_changed = false;
+            text = py::str(temp[1]);
+           // bContent_changed, text =
         }
         catch(std::domain_error e)
         {
@@ -109,6 +127,8 @@ void save_edit(py::handle page, py::list utils, py::str text)
             }
             else
             {
+             //   py::print(py::str(text));
+                py::print(string("Content changed? " + to_string(bContent_changed)));
                 page.attr("save")(text,edit_summary,true,true);
                 py::print("Saved page");
             }
@@ -131,7 +151,7 @@ void save_edit(py::handle page, py::list utils, py::str text)
     }
 }
 void process(py::object site, py::str cat_name, py::list utils, int offset, bool limited_run, int pages_to_run) {
-    if(string(cat_name) == "" || cat_name == NULL || utils == NULL || site == NULL) {
+    if(string(cat_name) == string("") || cat_name == NULL || utils == NULL || site == NULL) {
         throw new std::domain_error("Inputs invalid");
     }
     int counter = 0;
@@ -140,21 +160,21 @@ void process(py::object site, py::str cat_name, py::list utils, int offset, bool
     {
         if(offset > 0) {
             offset -= 1;
-            cout << "Skipped due to offset config\n";
+            cout << "Skipped due to offset config" << std::endl;
             continue;
         }
-        cout << string("Working with: ") + string(py::str(item.attr("name"))) + string(" ") + to_string(counter);
         if(limited_run)
         {
             if(counter < pages_to_run)
             {
+                cout << string("Working with: ") + string(py::str(item.attr("name"))) + string(" ") + to_string(counter) << std::endl;
                 counter += 1;
                 py::str text = item.attr("text")();
                 try{
                  //   divcol.attr("save_edit")(item,utils,text);
-                    cout << "Saved\n";
                  //   py::object builtins = pybind11::module::import("utils_custom");
                     save_edit(item,utils,text);
+                    cout << "Saved" << std::endl;
                 }catch(std::domain_error e) {
                     throw e;
                 }
@@ -192,7 +212,7 @@ bool do_cleanup_columns_list(py::object temp)
             if(builtins.attr("isinstance")(size,builtins.attr("int"))) {
                 temp.attr("params").attr("__getitem")(0) = py::str(string("colwidth=") + string(py::str(size)) + string("em"));
             }
-            if(size == Py_False) {
+            if(py::str(size).is(py::str(Py_False))) {
                 temp.attr("remove")("1",false);
             }
             return true;
