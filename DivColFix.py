@@ -1,14 +1,20 @@
 #!/usr/bin/env python3.6
 import mwclient, configparser, mwparserfromhell, argparse,re, pathlib
 from time import sleep
+import json
 
 def call_home(site):
     #page = site.Pages['User:' + config.get('enwiki','username') + "/status"]
-    page = site.Pages['User:DeprecatedFixerBot/status']
+    page = site.Pages['User:DeprecatedFixerBot/status2']
     text = page.text()
-    if "false" in text.lower():
-        return False
-    return True
+    data = json.loads(text)["run"]["div_col"]
+    if data:
+        return True
+    return False
+
+        #if "false" in text.lower():
+#   return False
+#return True
 def allow_bots(text, user):
     user = user.lower().strip()
     text = mwparserfromhell.parse(text)
@@ -52,7 +58,7 @@ def save_edit(page, utils, text):
     if not call_home(site):#config):
         raise ValueError("Kill switch on-wiki is false. Terminating program.")
     time = 0
-    edit_summary = """'Removed deprecated parameter(s) from [[Template:Div col]]/[[Template:Columns-list]] using [[User:""" + config.get('enwikidep','username') + "| " + config.get('enwikidep','username') + """]]. Questions? See [[Template:Div col#Usage of "cols" parameter]] or [[User talk:TheSandDoctor|msg TSD!]] (please mention that this is task #2! [[Wikipedia:Bots/Requests for approval/DeprecatedFixerBot 2|BRFA in-progress]])"""
+    edit_summary = """Removed deprecated parameter(s) from [[Template:Div col]]/[[Template:Columns-list]] using [[User:""" + config.get('enwikidep','username') + "| " + config.get('enwikidep','username') + """]]. Questions? See [[Template:Div col#Usage of "cols" parameter]] or [[User talk:TheSandDoctor|msg TSD!]] (please mention that this is task #2!))"""
     while True:
          #text = page.edit()
         if time == 1:
@@ -282,8 +288,9 @@ def single_run(title, utils, site):
     try:
         #utils = [config,site,dry_run]
         save_edit(page, utils, text)#config, api, site, text, dry_run)#, config)
-    except ValueError as err:
-        print(err)
+    except ValueError:# as err:
+        raise
+#print(err)
 def category_run(cat_name, utils, site, offset,limited_run,pages_to_run):
     if cat_name is None or cat_name is "":
         raise ValueError("Category name cannot be empty!")
@@ -311,8 +318,9 @@ def category_run(cat_name, utils, site, offset,limited_run,pages_to_run):
                 text = page.text()
                 try:
                     save_edit(page, utils, text)#config, api, site, text, dry_run)#, config)
-                except ValueError as err:
-                    print(err)
+                except ValueError:# as err:
+                    raise
+        #print(err)
             else:
                 return  # run out of pages in limited run
 def main():
@@ -322,7 +330,7 @@ def main():
     category = "Pages using Columns-list with deprecated parameters"#"Pages using div col with deprecated parameters"
     limited_run = True
 
-    parser = argparse.ArgumentParser(prog='TweetCiteBot Div col deprecation fixer', description='''Reads {{div col}} templates
+    parser = argparse.ArgumentParser(prog='DeprecatedFixer Div col deprecation fixer', description='''Reads {{div col}} templates
     located inside the category "Pages using div col with deprecated parameters" (https://en.wikipedia.org/wiki/Category:Pages_using_div_col_with_deprecated_parameters).
     If it has unnamed 1st and/or 2nd parameter(s) or uses the parameter |cols (all deprecated). If the 1st unnamed parameter is found, it removes the parameter.
     If the 2nd unnamed parameter is found, then it removes the template and adds colwidth with the value of the 2nd unnamed parameter (plus "em").''')
