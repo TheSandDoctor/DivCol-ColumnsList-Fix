@@ -43,7 +43,7 @@ void save_edit(py::handle page, py::list utils, py::str text)
     //from_string<bool>(bDry_run, Dry_run, std::boolalpha);
    // py::print(bDry_run);
     py::str original_text = text;
-    py::object divcol = pybind11::module::import("DivColFix");
+    py::object divcol = pybind11::module::import("lib_DivColFix");
     if(!bDry_run && !divcol.attr("allow_bots")(original_text,config.attr("get")("enwikidep","username")))
     {
         py::print("Page editing blocked as template preventing edit is present.");
@@ -85,7 +85,6 @@ void save_edit(py::handle page, py::list utils, py::str text)
             else if(py::str(changed).is(py::str(Py_False)))
                 bContent_changed = false;
             text = py::str(temp[1]);
-           // bContent_changed, text =
         }
         catch(std::domain_error e)
         {
@@ -155,7 +154,7 @@ void process(py::object site, py::str cat_name, py::list utils, int offset, bool
         throw new std::domain_error("Inputs invalid");
     }
     int counter = 0;
-    py::object divcol = pybind11::module::import("DivColFix");
+    py::object divcol = pybind11::module::import("lib_DivColFix");
     for(auto item : site.attr("Categories").attr("__getitem__")(cat_name))
     {
         if(offset > 0) {
@@ -163,10 +162,10 @@ void process(py::object site, py::str cat_name, py::list utils, int offset, bool
             cout << "Skipped due to offset config" << std::endl;
             continue;
         }
-        if(limited_run)
+        if(limited_run && counter < pages_to_run)
         {
-            if(counter < pages_to_run)
-            {
+          //  if(counter < pages_to_run)
+           // {
                 cout << string("Working with: ") + string(py::str(item.attr("name"))) + string(" ") + to_string(counter) << std::endl;
                 counter += 1;
                 py::str text = item.attr("text")();
@@ -178,8 +177,8 @@ void process(py::object site, py::str cat_name, py::list utils, int offset, bool
                 }catch(std::domain_error e) {
                     throw e;
                 }
-            } else { return; }
-        }
+        } else { return; }
+      //  }
     }
 }
 /**
