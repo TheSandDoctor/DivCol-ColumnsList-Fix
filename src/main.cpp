@@ -23,7 +23,7 @@ py::list gen_cat(py::object site,py::str cat) {
     }
     return list;
 }
-bool is_dry_run(py::str run)
+bool get_bool_value(py::object run)
 {
     if(py::str(run).attr("strip")().is(py::str(Py_True)))
         return true;
@@ -37,11 +37,13 @@ void save_edit(py::handle page, py::list utils, py::str text)
     auto site = utils[1];
     //bool bDry_run = (bool)utils[2];
    // string Dry_run = string(py::str(utils[2]));
-    bool bDry_run = is_dry_run(py::str(utils[2]));
+    bool bDry_run = get_bool_value(utils[2]);
+    bool bisDivCol = get_bool_value(utils[3]);
    // py::print(string("V ") + string(py::str(utils[2])));
     bool bContent_changed = false;
     //from_string<bool>(bDry_run, Dry_run, std::boolalpha);
-   // py::print(bDry_run);
+  //  py::print(bDry_run);
+   // py::print(bisDivCol);
     py::str original_text = text;
     py::object divcol = pybind11::module::import("lib_DivColFix");
     if(!bDry_run && !divcol.attr("allow_bots")(original_text,config.attr("get")("enwikidep","username")))
@@ -67,7 +69,11 @@ void save_edit(py::handle page, py::list utils, py::str text)
     if(!call_home(site, "DeprecatedFixerBot"))
         throw new std::domain_error("Kill switch on-wiki is false. Terminating program.");
     int time = 0;
-    string edit_summary = string("""Removed deprecated parameter(s) from [[Template:Div col]]/[[Template:Columns-list]] using [[User:""") + string(py::str(config.attr("get")("enwikidep","username"))) + string("| ") + string(py::str(config.attr("get")("enwikidep","username"))) + string("""]]. Questions? See [[Template:Div col#Usage of \"cols\" parameter]] or [[User talk:TheSandDoctor|msg TSD!]] (please mention that this is task #2!))""");
+    string edit_summary;
+    if(bisDivCol)
+        edit_summary = string("""Removed deprecated parameter(s) from [[Template:Div col]] using [[User:""") + string(py::str(config.attr("get")("enwikidep","username"))) + string("| ") + string(py::str(config.attr("get")("enwikidep","username"))) + string("""]]. Questions? See [[Template:Div col#Usage of \"cols\" parameter]] or [[User talk:TheSandDoctor|msg TSD!]] (please mention that this is task #2!))""");
+    else
+        edit_summary = string("""Removed deprecated parameter(s) from [[Template:Columns-list]] using [[User:""") + string(py::str(config.attr("get")("enwikidep","username"))) + string("| ") + string(py::str(config.attr("get")("enwikidep","username"))) + string("""]]. Questions? See [[Template:Div col#Usage of \"cols\" parameter]] or [[User talk:TheSandDoctor|msg TSD!]] (please mention that this is task #2!))""");
     py::object open = py::module::import("builtins").attr("open");
     while(1)
     {
@@ -150,7 +156,7 @@ void save_edit(py::handle page, py::list utils, py::str text)
     }
 }
 void process(py::object site, py::str cat_name, py::list utils, int offset, bool limited_run, int pages_to_run) {
-    if(string(cat_name) == string("") || cat_name == NULL || utils == NULL || site == NULL) {
+    if(utils == NULL || site == NULL) {
         throw new std::domain_error("Inputs invalid");
     }
     int counter = 0;

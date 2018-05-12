@@ -316,6 +316,7 @@ def category_run(cat_name, utils, site, offset,limited_run,pages_to_run):
                 return  # run out of pages in limited run
 def main():
     dry_run = False
+    is_div_col = False  # false means that it is the columns-list category
     pages_to_run = 1
     offset = 0
     category = "Pages using Columns-list with deprecated parameters"#"Pages using div col with deprecated parameters"
@@ -346,7 +347,7 @@ def main():
         print(e)
         raise ValueError("Login failed.")
 
-    utils = [config,site,dry_run]
+    utils = [config,site,dry_run, is_div_col]
     try:
         divcolfixer.process(site,category,utils,offset,limited_run, pages_to_run)
     except ValueError as e:
