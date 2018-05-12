@@ -317,7 +317,7 @@ def category_run(cat_name, utils, site, offset,limited_run,pages_to_run):
 def main():
     dry_run = False
     is_div_col = False  # false means that it is the columns-list category
-    pages_to_run = 1
+    pages_to_run = 100
     offset = 0
     category = "Pages using Columns-list with deprecated parameters"#"Pages using div col with deprecated parameters"
     limited_run = True
