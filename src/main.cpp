@@ -135,8 +135,15 @@ void save_edit(py::handle page, py::list utils, py::str text)
             {
              //   py::print(py::str(text));
                 py::print(string("Content changed? " + to_string(bContent_changed)));
-                page.attr("save")(text,edit_summary,true,true);
-                py::print("Saved page");
+                if(bContent_changed)
+                {
+                    page.attr("save")(text,edit_summary,true,true);
+                    py::print("Saved page");
+                }
+                else
+                {
+                    py::print("Didn't save, content not changed");
+                }
             }
             // I would prefer the below design, but need to figure out how to implement as below code does not compile
         } /*catch (mwclient.attr("ProtectedPageError")()) {
@@ -180,7 +187,7 @@ void process(py::object site, py::str cat_name, py::list utils, int offset, bool
                  //   divcol.attr("save_edit")(item,utils,text);
                  //   py::object builtins = pybind11::module::import("utils_custom");
                     save_edit(item,utils,text);
-                    cout << "Saved" << std::endl;
+                    //cout << "Saved" << std::endl;
                 }catch(std::domain_error e) {
                     cout << "errR";
                     py::print("err");

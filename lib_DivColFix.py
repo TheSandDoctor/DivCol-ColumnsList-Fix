@@ -110,8 +110,9 @@ def save_edit(page, utils, text):
             #    print("Would have saved here")
             #    break
                 #TODO: Enable
-                page.save(text, summary=edit_summary, bot=True, minor=True)
-                print("Saved page")
+                if content_changed:
+                    page.save(text, summary=edit_summary, bot=True, minor=True)
+                    print("Saved page")
         except [[EditError]]:
             print("Error")
             time = 1
