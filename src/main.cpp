@@ -23,6 +23,7 @@ py::list gen_cat(py::object site,py::str cat) {
     }
     return list;
 }
+
 bool get_bool_value(py::object run)
 {
     if(py::str(run).attr("strip")().is(py::str(Py_True)))
@@ -175,13 +176,28 @@ void process(py::object site, py::str cat_name, py::list utils, int offset, bool
                 cout << string("Working with: ") + string(py::str(item.attr("name"))) + string(" ") + to_string(counter) << std::endl;
                 counter += 1;
                 py::str text = item.attr("text")();
-                try{
+                try {
                  //   divcol.attr("save_edit")(item,utils,text);
                  //   py::object builtins = pybind11::module::import("utils_custom");
                     save_edit(item,utils,text);
                     cout << "Saved" << std::endl;
                 }catch(std::domain_error e) {
-                    throw e;
+                    cout << "errR";
+                    py::print("err");
+                    py::print(string(e.what()));
+                    return;
+                  //  throw e;
+                } catch(pybind11::error_already_set e) {
+                  //  py::print(string(e.what()));
+                    if(Helpers::is_invalid_literal(e.what()))
+                    {
+                        cout << "invalid literal for error, skipping" << endl;
+                        continue;
+                    } else {
+                        throw;
+                    }
+                  //  cout << e.what() <<endl;
+                    //throw;
                 }
         } else { return; }
       //  }
@@ -259,6 +275,7 @@ py::list process_page(py::str text, bool dry_run)
 }
 PYBIND11_MODULE(divcolfixer, m) {
     m.def("call_home",&call_home);
+    m.def("is_invalid_literal",&Helpers::is_invalid_literal);
     //process(py::object site, py::str cat_name, py::list utils, int offset, bool limited_run, int pages_to_run)
     m.def("process",&process);
 }

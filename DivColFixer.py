@@ -351,6 +351,7 @@ def main():
     try:
         divcolfixer.process(site,category,utils,offset,limited_run, pages_to_run)
     except ValueError as e:
+        
         print("\n\n" + str(e))
     #config.read('credentials.txt')
     #TODO: site.login(config.get('enwiki','username'), config.get('enwiki', 'password'))

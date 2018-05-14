@@ -150,7 +150,7 @@ def process_page(text,dry_run):
             try:
                 content_changed = do_cleanup_columns_list(template)
                 print("done columns-list")
-            except ValueError:
+            except ValueError as e:
                 raise
 
 
@@ -199,6 +199,7 @@ def get_em_sizes(template, param):
         print("Wasn't digit")
         return is_not_digit.group(1)
     try:
+        # print(str(template.get(param).value))
         if int(str(template.get(param).value)) < 2:
             print("FALSEEEEEEEE!")
             return False
