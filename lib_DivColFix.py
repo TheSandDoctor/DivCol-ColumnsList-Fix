@@ -230,7 +230,7 @@ def do_cleanup_div_col(template):
         if template.has("cols"):
             size = get_em_sizes(template, "cols")
             template.remove("cols")
-            if size:
+            if size and size != 30:
                 template.add("colwidth",str(size) + "em")
             return True
         if template.has("1") and template.has("2"):
@@ -238,20 +238,20 @@ def do_cleanup_div_col(template):
             template.remove("1",False)
             size = get_em_sizes(template, "2")
             template.remove("2",False)
-            if size:
+            if size and size != 30:
                 template.add("colwidth",str(size) + "em")
             return True
         elif template.has("1"):
             #TODO: use 1, remove
             size = get_em_sizes(template, "1")
             template.remove("1")
-            if size:
+            if size and size != 30:
                 template.add("colwidth",str(size) + "em")
             return True
         elif template.has("2"):
             size = get_em_sizes(template, "2")
             template.remove("2")
-            if size:
+            if size and size != 30:
                 template.add("colwidth",str(size) + "em")
             return True
     except ValueError:
