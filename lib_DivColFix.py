@@ -192,7 +192,7 @@ def process_page(text,dry_run):
 def get_em_sizes(template, param):
     #param = str(param)
     #print("Value enter: " + str(template.get(param).value))
-    is_not_digit = re.match(r'([0-9]+)em?',str(template.get(param).value))
+    is_not_digit = re.match(r'(?:\s*)?([0-9]+)em?',str(template.get(param).value))
     if is_not_digit:
         #template.get(param).value = is_not_digit.group(1)
         #if it already has "em", it will catch this regex and return the number bit
