@@ -165,6 +165,7 @@ def process_page(text,dry_run):
                 raise
 
         elif (template.name.matches("colbegin") or template.name.matches("cols")
+        or template.name.matches("col div")
         or template.name.matches("div 2col") or template.name.matches("div col begin")
         or template.name.matches("div col start") or template.name.matches("div-col")
         or template.name.matches("divbegin") or template.name.matches("divcol")
